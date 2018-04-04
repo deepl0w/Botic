@@ -78,6 +78,8 @@ class Bot:
             msg = subprocess.check_output(arg, stderr = STDOUT, shell=True, timeout = 2).decode("utf-8").strip()
         except subprocess.CalledProcessError as exc:
             msg = exc.output.decode("utf-8").strip()
+        except subprocess.TimeoutExpired as exc:
+            msg = "Timeout!"
 
         msg = "```\n" + msg + "```"
         await self.client.send_message(channel, msg)
