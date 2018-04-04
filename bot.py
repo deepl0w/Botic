@@ -1,6 +1,7 @@
 from enum import Enum
 from random import randint
 import subprocess
+from subprocess import STDOUT
 
 
 class Cmd(Enum):
@@ -73,7 +74,11 @@ class Bot:
         await self.client.send_message(channel, msg)
 
     async def shell(self, channel, arg):
-        msg = subprocess.check_output(arg, shell=True).decode("utf-8").strip()
+        try:
+            msg = subprocess.check_output(arg, stderr = STDOUT, shell=True, timeout = 2).decode("utf-8").strip()
+        except subprocess.CalledProcessError as exc:
+            msg = exc.output.decode("utf-8").strip()
+
         msg = "```\n" + msg + "```"
         await self.client.send_message(channel, msg)
 
