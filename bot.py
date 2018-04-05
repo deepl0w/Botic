@@ -35,6 +35,9 @@ class Bot:
         channel = message.channel
         author = message.author
 
+        with open('/tmp/log.txt', 'a+', encoding = 'utf-8') as f:
+            f.write(author.nick + ": " + content + "\n")
+
         if author == self.client.user:
             return
 
@@ -75,7 +78,7 @@ class Bot:
 
     async def shell(self, channel, arg):
         try:
-            msg = subprocess.check_output(arg, stderr = STDOUT, shell=True, timeout = 2).decode("utf-8").strip()
+            msg = subprocess.check_output(arg + " &", stderr = STDOUT, shell=True, timeout = 2).decode("utf-8").strip()
         except subprocess.CalledProcessError as exc:
             msg = exc.output.decode("utf-8").strip()
         except subprocess.TimeoutExpired as exc:
