@@ -36,7 +36,7 @@ class Player:
 
             await self._next_song(channel, voice)
 
-    async def skip(self):
+    async def skip(self, channel):
         self.player.stop()
 
         await utils.send_message(self.client, channel,

@@ -116,7 +116,7 @@ class Bot:
         await self.players[server].add(channel, voice_channel, arg)
 
     async def skip(self, server, channel):
-        await self.players[server].skip()
+        await self.players[server].skip(channel)
 
     async def shell(self, channel, arg):
         try:
