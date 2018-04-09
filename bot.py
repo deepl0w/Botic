@@ -81,7 +81,7 @@ class Bot:
         elif command == Cmd.PLAY.value:
             voice_channel = author.voice.voice_channel
             if len(args) > 1:
-                await self.play(server, channel, voice_channel, args[1].strip())
+                await self.play(server, channel, voice_channel, " ".join(args[1:]).strip())
         elif command == Cmd.SKIP.value:
             await self.skip(server, channel)
         # elif command == Cmd.SHELL.value:
@@ -108,7 +108,7 @@ class Bot:
 
     async def play(self, server, channel, voice_channel, arg):
         if not voice_channel:
-            await utils.send_message(self.client, channel, "You must be in a voie channel!", True)
+            await utils.send_message(self.client, channel, "You must be in a voie channel!")
 
         if self.client.is_voice_connected(server):
             voice = self.client.voice_client_in(server)
