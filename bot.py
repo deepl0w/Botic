@@ -1,5 +1,6 @@
 from enum import Enum
 from random import randint
+import os
 import subprocess
 from subprocess import STDOUT
 
@@ -9,42 +10,58 @@ class Cmd(Enum):
     HELP     = 'help'
     FLIP     = 'flip'
     BOT_SRC  = 'botsrc'
-    SHELL    = 'shell'
+    # SHELL    = 'shell'
+    PLAY     = 'play'
 
 class Bot:
 
 
     MAX_COMMAND_SIZE = 20
 
-    COMMANDS = [Cmd.HELLO, Cmd.HELP, Cmd.FLIP, Cmd.BOT_SRC, Cmd.SHELL]
+    COMMANDS = [Cmd.HELLO, Cmd.HELP, Cmd.FLIP, Cmd.BOT_SRC, Cmd.PLAY]
 
     COMMANDS_DESCRIPTION = {
             Cmd.HELLO: 'Responds by saying hello to you.',
             Cmd.FLIP:  'Flips a coin.',
             Cmd.HELP:  'Prints this info message.',
             Cmd.BOT_SRC: 'Prints the source code of the Bot class',
-            Cmd.SHELL:   'Run a shell command'
+            Cmd.PLAY : 'Play music from youtube',
+            # Cmd.SHELL:   'Run a shell command'
     }
 
     def __init__(self, client, prefix):
         self.prefix = prefix
         self.client = client
 
+    def log(self, message):
+        server  = message.server.name
+        channel = message.channel.name
+        content = message.content
+        author = message.author.name
+
+        path = server
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        path += "/" + channel + "_log.txt"
+        with open(path, 'a+', encoding = 'utf-8') as f:
+            f.write(author + ": " + content + "\n")
+
     async def run(self, message):
         content = message.content
         channel = message.channel
         author = message.author
 
-        with open('/tmp/log.txt', 'a+', encoding = 'utf-8') as f:
-            f.write(author.nick + ": " + content + "\n")
-
         if author == self.client.user:
             return
+
+        self.log(message)
 
         if content[0:1] != self.prefix:
             return
 
-        command = content[1:self.MAX_COMMAND_SIZE].partition(' ')[0]
+        args = content[1:self.MAX_COMMAND_SIZE].partition(' ')
+        command = args[0]
 
         if command == Cmd.HELP.value:
             await self.help(channel)
@@ -54,9 +71,13 @@ class Bot:
             await self.flip(channel, author)
         elif command == Cmd.BOT_SRC.value:
             await self.bot_src(channel)
+        elif command == Cmd.PLAY.value:
+            voice_channel = author.voice.voice_channel
+            if len(args) > 1:
+                await self.play(channel, voice_channel, arg[1])
         elif command == Cmd.SHELL.value:
-            arg = content[len(command)+1:]
-            await self.shell(channel, arg)
+            if len(args) > 1:
+                await self.shell(channel, " ".join(args[1:]))
         else:
             await self.invalid_command(channel)
 
@@ -66,7 +87,7 @@ class Bot:
         await self.client.send_message(channel, msg)
 
     async def flip(self, channel, author):
-        if author.nick == 'La Araña Discoteca':
+        if author.name == 'mihaid':
             msg = "Muie Miță! :))))))))))))))))))))"
         else:
             if randint(0, 1) == 0:
@@ -74,7 +95,16 @@ class Bot:
             else:
                 msg = "Tails!"
 
-        await self.client.send_message(channel, msg)
+        await self.client.send_message(channel, voice_channel, arg)
+
+    async def play(self, channel, voice_channel, arg):
+        if not voice_channel:
+            await self.client.send_message(channel, "`You must be in a voie channel!`")
+
+        voice = await self.client.join_voice_channel(voice_channel)
+        palyer = await voice.create_ytdl_player(arg)
+
+        player.start()
 
     async def shell(self, channel, arg):
         try:
