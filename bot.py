@@ -4,6 +4,7 @@ import os
 import subprocess
 import asyncio
 import youtube_dl
+import utils
 from subprocess import STDOUT
 from queue import Queue
 
@@ -92,7 +93,7 @@ class Bot:
     async def hello(self, channel, author):
         msg = 'Hello {0.mention}'.format(author)
 
-        await self.client.send_message(channel, msg)
+        await utils.send_message(self.client, channel, msg)
 
     async def flip(self, channel, author):
         if author.name == 'mihaid':
@@ -103,11 +104,11 @@ class Bot:
             else:
                 msg = "Tails!"
 
-        await self.client.send_message(channel, msg)
+        await utils.send_message(self.client, channel, msg, True)
 
     async def play(self, server, channel, voice_channel, arg):
         if not voice_channel:
-            await self.client.send_message(channel, "`You must be in a voie channel!`")
+            await utils.send_message(self.client, channel, "`You must be in a voie channel!`", True)
 
         if self.client.is_voice_connected(server):
             voice = self.client.voice_client_in(server)
@@ -126,7 +127,7 @@ class Bot:
 
     async def skip(self, server, channel):
         self.players[server].stop()
-        await self.client.send_message(channel, "Skipping " + self.players[server].title + ".")
+        await utils.send_message(self.client, channel, "Skipping " + self.players[server].title + ".", True)
 
     async def _next_song(self, server, channel, voice):
         if not self.play_queues[server].empty():
@@ -141,14 +142,14 @@ class Bot:
                         after = lambda : asyncio.run_coroutine_threadsafe(
                             self._next_song(server, channel, voice), self.client.loop))
 
-                await self.client.send_message(channel, "Now playing " + self.players[server].title + ".")
+                await utils.send_message(self.client, channel, "Now playing " + self.players[server].title + ".", True)
             except youtube_dl.utils.DownloadError:
-                await self.client.send_message(channel, "Invalid query \"" + song + "\".")
+                await utils.send_message(self.client, channel, "Invalid query \"" + song + "\".", True)
         else:
             await voice.disconnect()
             del self.play_queues[server]
 
-            await self.client.send_message(channel, "Queue completed.")
+            await utils.send_message(self.client, channel, "Queue completed.", True)
 
         self.players[server].start()
 
@@ -160,37 +161,23 @@ class Bot:
         except subprocess.TimeoutExpired as exc:
             msg = "Timeout!"
 
-        msg = "```\n" + msg + "```"
-        await self.client.send_message(channel, msg)
+        await utils.send_message(self.client, channel, msg, True)
 
     async def bot_src(self, channel):
-        start_ticks = "```python\n"
-        end_ticks = "```"
-
         msg = open('bot.py', encoding="utf-8").read().strip().replace('`', '`\u200b')
-
-        if len(msg) > 1990:
-            lines = msg.split('\n')
-            msg1 = start_ticks + "\n".join(lines[:len(lines)//2]) + end_ticks
-            msg2 = start_ticks + "\n".join(lines[len(lines)//2:]) + end_ticks
-
-            await self.client.send_message(channel, msg1)
-            await self.client.send_message(channel, msg2)
-        else:
-            await self.client.send_message(channel, msg)
+        await utils.send_message(self.client, channel, msg, True, "python")
 
     async def help(self, channel):
-        msg = "```\n"
+        msg = ""
         for c in self.COMMANDS:
             msg += "{}{} - {}\n".format(self.prefix, c.value,
                                         self.COMMANDS_DESCRIPTION[c])
-        msg += "```"
 
-        await self.client.send_message(channel, msg)
+        await utils.send_message(self.client, channel, msg, True)
 
     async def invalid_command(self, channel):
         msg = "Invalid command! Use `" + self.prefix + "help` for more info."
-        await self.client.send_message(channel, msg)
+        await utils.send_message(self.client, channel, msg, True)
 
     def ready(self):
         print('Logged in as')
