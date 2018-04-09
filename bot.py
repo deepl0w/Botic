@@ -104,11 +104,11 @@ class Bot:
             else:
                 msg = "Tails!"
 
-        await utils.send_message(self.client, channel, msg, True)
+        await utils.send_message(self.client, channel, msg)
 
     async def play(self, server, channel, voice_channel, arg):
         if not voice_channel:
-            await utils.send_message(self.client, channel, "`You must be in a voie channel!`", True)
+            await utils.send_message(self.client, channel, "You must be in a voie channel!", True)
 
         if self.client.is_voice_connected(server):
             voice = self.client.voice_client_in(server)
@@ -127,7 +127,7 @@ class Bot:
 
     async def skip(self, server, channel):
         self.players[server].stop()
-        await utils.send_message(self.client, channel, "Skipping " + self.players[server].title + ".", True)
+        await utils.send_message(self.client, channel, "Skipping `" + self.players[server].title + "`.")
 
     async def _next_song(self, server, channel, voice):
         if not self.play_queues[server].empty():
@@ -142,14 +142,14 @@ class Bot:
                         after = lambda : asyncio.run_coroutine_threadsafe(
                             self._next_song(server, channel, voice), self.client.loop))
 
-                await utils.send_message(self.client, channel, "Now playing " + self.players[server].title + ".", True)
+                await utils.send_message(self.client, channel, "Now playing `" + self.players[server].title + "`.")
             except youtube_dl.utils.DownloadError:
-                await utils.send_message(self.client, channel, "Invalid query \"" + song + "\".", True)
+                await utils.send_message(self.client, channel, "Invalid query `" + song + "`.")
         else:
             await voice.disconnect()
             del self.play_queues[server]
 
-            await utils.send_message(self.client, channel, "Queue completed.", True)
+            await utils.send_message(self.client, channel, "Queue completed.")
 
         self.players[server].start()
 
@@ -177,7 +177,7 @@ class Bot:
 
     async def invalid_command(self, channel):
         msg = "Invalid command! Use `" + self.prefix + "help` for more info."
-        await utils.send_message(self.client, channel, msg, True)
+        await utils.send_message(self.client, channel, msg)
 
     def ready(self):
         print('Logged in as')
