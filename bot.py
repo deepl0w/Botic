@@ -7,6 +7,7 @@ import youtube_dl
 import utils
 from subprocess import STDOUT
 from queue import Queue
+from player import Player
 
 
 class Cmd(Enum):
@@ -36,7 +37,6 @@ class Bot:
     def __init__(self, client, prefix):
         self.prefix = prefix
         self.client = client
-        self.play_queues = {}
         self.players = {}
 
     def log(self, message):
@@ -108,50 +108,15 @@ class Bot:
 
     async def play(self, server, channel, voice_channel, arg):
         if not voice_channel:
-            await utils.send_message(self.client, channel, "You must be in a voie channel!")
+            await utils.send_message(self.client, channel, "You must be in a voice channel!")
 
-        if self.client.is_voice_connected(server):
-            voice = self.client.voice_client_in(server)
-        else:
-            voice = await self.client.join_voice_channel(voice_channel)
+        if server not in self.players:
+            self.players[server] = Player(self.client, server)
 
-
-        if server not in self.play_queues:
-            # create queue for the server where the request was made
-            self.play_queues[server] = Queue()
-            self.play_queues[server].put_nowait(arg)
-
-            await self._next_song(server, channel, voice)
-        else:
-            self.play_queues[server].put_nowait(arg)
+        await self.players[server].add(channel, voice_channel, arg)
 
     async def skip(self, server, channel):
-        self.players[server].stop()
-        await utils.send_message(self.client, channel, "Skipping `" + self.players[server].title + "`.")
-
-    async def _next_song(self, server, channel, voice):
-        if not self.play_queues[server].empty():
-            song = self.play_queues[server].get_nowait()
-            # convert to youtube search if it's not a link
-            if not (song.startswith("http://") or song.startswith("https://")):
-                    song = "ytsearch:" + song
-
-            try:
-                self.players[server] = await voice.create_ytdl_player(song,
-                        before_options="-reconnect 1",
-                        after = lambda : asyncio.run_coroutine_threadsafe(
-                            self._next_song(server, channel, voice), self.client.loop))
-
-                await utils.send_message(self.client, channel, "Now playing `" + self.players[server].title + "`.")
-            except youtube_dl.utils.DownloadError:
-                await utils.send_message(self.client, channel, "Invalid query `" + song + "`.")
-        else:
-            await voice.disconnect()
-            del self.play_queues[server]
-
-            await utils.send_message(self.client, channel, "Queue completed.")
-
-        self.players[server].start()
+        await self.players[server].skip()
 
     async def shell(self, channel, arg):
         try:
